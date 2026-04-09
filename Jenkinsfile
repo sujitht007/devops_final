@@ -2,50 +2,47 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_HUB = "sujitht007"
-        IMAGE_NAME = "microservice-app"
-        KUBECONFIG = "C:\\Users\\LENOVO\\.kube\\config"  // <-- points to your Minikube kubeconfig
+        IMAGE_NAME = "sujitht007/microservice-app"
+        IMAGE_TAG  = "latest"
+        DOCKER_USER = credentials('dockerhub-pass') // your Jenkins credential ID
+        DOCKER_PASS = credentials('dockerhub-pass') // same ID
     }
 
     stages {
+        stage('Checkout') {
+            steps {
+                git 'https://github.com/your-username/your-repo.git' // replace with your repo
+            }
+        }
 
-        stage('Build') {
+        stage('Install Dependencies') {
             steps {
                 bat 'npm install'
             }
         }
 
-        stage('Test') {
+        stage('Build Docker Image') {
             steps {
-                bat 'echo No tests yet'
+                powershell '''
+                    $env:DOCKER_PASS | docker login -u $env:DOCKER_USER --password-stdin
+                    docker build -t $env:IMAGE_NAME:$env:IMAGE_TAG .
+                '''
             }
         }
 
-        stage('Docker Build') {
+        stage('Push Docker Image') {
             steps {
-                bat "docker build -t %DOCKER_HUB%/%IMAGE_NAME%:latest ."
+                powershell '''
+                    $env:DOCKER_PASS | docker login -u $env:DOCKER_USER --password-stdin
+                    docker push $env:IMAGE_NAME:$env:IMAGE_TAG
+                '''
             }
         }
+    }
 
-        stage('Docker Push') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-pass', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    bat """
-                    echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin
-                    docker push %DOCKER_HUB%/%IMAGE_NAME%:latest
-                    """
-                }
-            }
-        }
-
-        stage('Kubernetes Deploy') {
-            steps {
-                // Ensure Jenkins knows where kubeconfig is
-                withEnv(["KUBECONFIG=${env.KUBECONFIG}"]) {
-                    // Optional: skip YAML validation to avoid openapi errors
-                    bat 'kubectl apply -f k8s\\ --validate=false'
-                }
-            }
+    post {
+        always {
+            echo 'Pipeline finished.'
         }
     }
 }
