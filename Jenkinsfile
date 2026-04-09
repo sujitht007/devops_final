@@ -3,6 +3,7 @@ pipeline {
     environment {
         IMAGE_NAME = "microservice-app"
         DOCKER_HUB = "sujitht007"
+        KUBECONFIG = "C:\\Users\\LENOVO\\.kube\\config"
     }
     stages {
         stage('Checkout SCM') {
@@ -30,8 +31,8 @@ pipeline {
         }
         stage('Deploy to Kubernetes') {
             steps {
-                bat 'kubectl apply -f k8s/ --validate=false'
-                bat 'kubectl rollout status deployment/microservice-app'
+                bat 'kubectl apply -f k8s/ --validate=false --kubeconfig="C:\\Users\\LENOVO\\.kube\\config"'
+                bat 'kubectl rollout status deployment/microservice-app --kubeconfig="C:\\Users\\LENOVO\\.kube\\config"'
             }
         }
     }
