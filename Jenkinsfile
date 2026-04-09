@@ -9,7 +9,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/sujitht007/devops_final.git', credentialsId: 'dockerhub-pass'
+                git branch: 'main', url: 'https://github.com/sujitht007/devops_final.git'
             }
         }
 
@@ -19,16 +19,28 @@ pipeline {
             }
         }
 
-        stage('Build & Push Docker Image') {
+        stage('Build Docker Image') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-pass', 
                                                   usernameVariable: 'DOCKER_USER', 
                                                   passwordVariable: 'DOCKER_PASS')]) {
-                    powershell '''
-                        $env:DOCKER_PASS | docker login -u $env:DOCKER_USER --password-stdin
-                        docker build -t $env:IMAGE_NAME:$env:IMAGE_TAG .
-                        docker push $env:IMAGE_NAME:$env:IMAGE_TAG
-                    '''
+                    powershell """
+                        Write-Output \$env:DOCKER_PASS | docker login -u \$env:DOCKER_USER --password-stdin
+                        docker build -t \$env:IMAGE_NAME:\$env:IMAGE_TAG .
+                    """
+                }
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-pass', 
+                                                  usernameVariable: 'DOCKER_USER', 
+                                                  passwordVariable: 'DOCKER_PASS')]) {
+                    powershell """
+                        Write-Output \$env:DOCKER_PASS | docker login -u \$env:DOCKER_USER --password-stdin
+                        docker push \$env:IMAGE_NAME:\$env:IMAGE_TAG
+                    """
                 }
             }
         }
