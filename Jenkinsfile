@@ -27,13 +27,13 @@ pipeline {
         }
 
         stage('Docker Push') {
-            steps {
-                withCredentials([string(credentialsId: 'dockerhub-pass', variable: 'PASS')]) {
-                    bat "docker login -u %DOCKER_HUB% -p %PASS%"
-                    bat "docker push %DOCKER_HUB%/%IMAGE_NAME%:latest"
-                }
-            }
+    steps {
+        withCredentials([usernamePassword(credentialsId: 'dockerhub-pass', usernameVariable: 'sujitht007', passwordVariable: '9345793342S')]) {
+            bat "docker login -u %DOCKER_USER% -p %DOCKER_PASS%"
+            bat "docker push %DOCKER_HUB%/%IMAGE_NAME%:latest"
         }
+    }
+}
 
         stage('Kubernetes Deploy') {
             steps {
