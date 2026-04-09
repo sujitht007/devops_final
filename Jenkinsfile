@@ -9,8 +9,7 @@ pipeline {
     stages {
         stage('Checkout SCM') {
             steps {
-                git url: 'https://github.com/sujitht007/devops_final.git', branch: 'main'
-                // Remove credentialsId if repo is public; use a GitHub PAT credential if private
+                git url: 'https://github.com/sujitht007/devops_final.git', branch: 'main', credentialsId: 'dockerhub-pass'
             }
         }
 
@@ -26,7 +25,6 @@ pipeline {
                                                  usernameVariable: 'DOCKER_USER', 
                                                  passwordVariable: 'DOCKER_PASS')]) {
                     bat """
-                    docker logout
                     echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin
                     docker build -t %DOCKER_HUB%/%IMAGE_NAME%:latest .
                     docker push %DOCKER_HUB%/%IMAGE_NAME%:latest
