@@ -11,7 +11,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git 'https://github.com/your-username/your-repo.git' // replace with your repo
+                git 'https://github.com/sujitht007/devops_final.git' // replace with your repo
             }
         }
 
