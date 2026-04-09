@@ -32,7 +32,7 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 bat 'kubectl apply -f k8s/ --validate=false --kubeconfig="C:\\Users\\LENOVO\\.kube\\config"'
-                bat 'kubectl rollout status deployment/microservice-app --kubeconfig="C:\\Users\\LENOVO\\.kube\\config"'
+                bat 'kubectl rollout status deployment/microservice-deployment --kubeconfig="C:\\Users\\LENOVO\\.kube\\config"'
             }
         }
     }
