@@ -1,44 +1,44 @@
 pipeline {
     agent any
-
     environment {
-        DOCKER_HUB = "sujitht007"
         IMAGE_NAME = "microservice-app"
+        DOCKER_HUB = "sujitht007"
+        KUBECONFIG = "C:\\Users\\LENOVO\\.kube\\config"
     }
-
     stages {
-
-        stage('Build') {
+        stage('Checkout SCM') {
             steps {
-                sh 'npm install'
+                git url: 'https://github.com/sujitht007/devops_final.git', 
+                    branch: 'main', 
+                    credentialsId: 'dockerhub-pass'
             }
         }
-
-        stage('Test') {
+        stage('Install Dependencies') {
             steps {
-                sh 'echo "No tests yet"'
+                bat 'npm install'
             }
         }
-
-        stage('Docker Build') {
+        stage('Build & Push Docker Image') {
             steps {
-                sh "docker build -t $DOCKER_HUB/$IMAGE_NAME:latest ."
-            }
-        }
-
-        stage('Docker Push') {
-            steps {
-                withCredentials([string(credentialsId: 'dockerhub-pass', variable: 'PASS')]) {
-                    sh "docker login -u $DOCKER_HUB -p $PASS"
-                    sh "docker push $DOCKER_HUB/$IMAGE_NAME:latest"
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-pass', 
+                                                 usernameVariable: 'DOCKER_USER', 
+                                                 passwordVariable: 'DOCKER_PASS')]) {
+                    bat "docker login -u %DOCKER_USER% -p %DOCKER_PASS%"
+                    bat "docker build -t %DOCKER_HUB%/%IMAGE_NAME%:latest ."
+                    bat "docker push %DOCKER_HUB%/%IMAGE_NAME%:latest"
                 }
             }
         }
-
-        stage('Kubernetes Deploy') {
+        stage('Deploy to Kubernetes') {
             steps {
-                sh 'kubectl apply -f k8s/'
+                bat 'kubectl apply -f k8s/ --validate=false --kubeconfig="C:\\Users\\LENOVO\\.kube\\config"'
+                bat 'kubectl rollout status deployment/microservice-deployment --kubeconfig="C:\\Users\\LENOVO\\.kube\\config"'
             }
+        }
+    }
+    post {
+        always {
+            bat 'docker logout'
         }
     }
 }
