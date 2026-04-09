@@ -4,14 +4,12 @@ pipeline {
     environment {
         IMAGE_NAME = "sujitht007/microservice-app"
         IMAGE_TAG  = "latest"
-        DOCKER_USER = credentials('dockerhub-pass') // your Jenkins credential ID
-        DOCKER_PASS = credentials('dockerhub-pass') // same ID
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git 'https://github.com/sujitht007/devops_final.git' // replace with your repo
+                git branch: 'main', url: 'https://github.com/sujitht007/devops_final.git', credentialsId: 'dockerhub-pass'
             }
         }
 
@@ -21,21 +19,17 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Build & Push Docker Image') {
             steps {
-                powershell '''
-                    $env:DOCKER_PASS | docker login -u $env:DOCKER_USER --password-stdin
-                    docker build -t $env:IMAGE_NAME:$env:IMAGE_TAG .
-                '''
-            }
-        }
-
-        stage('Push Docker Image') {
-            steps {
-                powershell '''
-                    $env:DOCKER_PASS | docker login -u $env:DOCKER_USER --password-stdin
-                    docker push $env:IMAGE_NAME:$env:IMAGE_TAG
-                '''
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-pass', 
+                                                  usernameVariable: 'DOCKER_USER', 
+                                                  passwordVariable: 'DOCKER_PASS')]) {
+                    powershell '''
+                        $env:DOCKER_PASS | docker login -u $env:DOCKER_USER --password-stdin
+                        docker build -t $env:IMAGE_NAME:$env:IMAGE_TAG .
+                        docker push $env:IMAGE_NAME:$env:IMAGE_TAG
+                    '''
+                }
             }
         }
     }
