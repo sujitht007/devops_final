@@ -4,6 +4,7 @@ pipeline {
     environment {
         DOCKER_HUB = "sujitht007"
         IMAGE_NAME = "microservice-app"
+        KUBECONFIG = "C:\\Users\\LENOVO\\.kube\\config"  // <-- points to your Minikube kubeconfig
     }
 
     stages {
@@ -26,20 +27,24 @@ pipeline {
             }
         }
 
-       stage('Docker Push') {
-    steps {
-        withCredentials([usernamePassword(credentialsId: 'dockerhub-pass', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-            bat """
-            echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin
-            docker push %DOCKER_HUB%/%IMAGE_NAME%:latest
-            """
+        stage('Docker Push') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-pass', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    bat """
+                    echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin
+                    docker push %DOCKER_HUB%/%IMAGE_NAME%:latest
+                    """
+                }
+            }
         }
-    }
-}
 
         stage('Kubernetes Deploy') {
             steps {
-                bat 'kubectl apply -f k8s\\'
+                // Ensure Jenkins knows where kubeconfig is
+                withEnv(["KUBECONFIG=${env.KUBECONFIG}"]) {
+                    // Optional: skip YAML validation to avoid openapi errors
+                    bat 'kubectl apply -f k8s\\ --validate=false'
+                }
             }
         }
     }
