@@ -19,26 +19,14 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Build & Push Docker Image') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-pass', 
                                                   usernameVariable: 'DOCKER_USER', 
                                                   passwordVariable: 'DOCKER_PASS')]) {
                     powershell """
-                        Write-Output \$env:DOCKER_PASS | docker login -u \$env:DOCKER_USER --password-stdin
+                        docker login -u \$env:DOCKER_USER -p \$env:DOCKER_PASS
                         docker build -t \$env:IMAGE_NAME:\$env:IMAGE_TAG .
-                    """
-                }
-            }
-        }
-
-        stage('Push Docker Image') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-pass', 
-                                                  usernameVariable: 'DOCKER_USER', 
-                                                  passwordVariable: 'DOCKER_PASS')]) {
-                    powershell """
-                        Write-Output \$env:DOCKER_PASS | docker login -u \$env:DOCKER_USER --password-stdin
                         docker push \$env:IMAGE_NAME:\$env:IMAGE_TAG
                     """
                 }
