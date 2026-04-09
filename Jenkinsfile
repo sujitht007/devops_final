@@ -2,15 +2,14 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "sujitht007/microservice-app"
-        IMAGE_TAG  = "latest"
+        IMAGE_NAME = "microservice-app"
+        DOCKER_HUB = "sujitht007"
     }
 
     stages {
-        stage('Checkout') {
+        stage('Checkout SCM') {
             steps {
-                // Checkout the main branch
-                git branch: 'main', url: 'https://github.com/sujitht007/devops_final.git'
+                git url: 'https://github.com/sujitht007/devops_final.git', branch: 'main', credentialsId: 'dockerhub-pass'
             }
         }
 
@@ -22,21 +21,13 @@ pipeline {
 
         stage('Build & Push Docker Image') {
             steps {
-                // Use Jenkins credentials for Docker login
-                withCredentials([usernamePassword(
-                    credentialsId: 'dockerhub-pass', 
-                    usernameVariable: 'DOCKER_USER', 
-                    passwordVariable: 'DOCKER_PASS')]) {
-
-                    powershell """
-                        # Login to Docker Hub using PAT
-                        echo \$env:DOCKER_PASS | docker login -u \$env:DOCKER_USER --password-stdin
-                        
-                        # Build Docker image
-                        docker build -t \$env:IMAGE_NAME:\$env:IMAGE_TAG .
-
-                        # Push Docker image
-                        docker push \$env:IMAGE_NAME:\$env:IMAGE_TAG
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-pass', 
+                                                 usernameVariable: 'DOCKER_USER', 
+                                                 passwordVariable: 'DOCKER_PASS')]) {
+                    bat """
+                    echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin
+                    docker build -t %DOCKER_HUB%/%IMAGE_NAME%:latest .
+                    docker push %DOCKER_HUB%/%IMAGE_NAME%:latest
                     """
                 }
             }
@@ -45,7 +36,7 @@ pipeline {
 
     post {
         always {
-            echo 'Pipeline finished.'
+            bat 'docker logout'
         }
     }
 }
