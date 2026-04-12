@@ -1,197 +1,172 @@
 const express = require('express');
+const mongoose = require('mongoose');
+const session = require('express-session');
 const bodyParser = require('body-parser');
+
 const app = express();
 
+// Middleware
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.static('public'));
 
-// Dummy products
-const products = [
-  { id: 1, name: "Laptop", price: 50000 },
-  { id: 2, name: "Phone", price: 20000 },
-  { id: 3, name: "Headphones", price: 2000 }
-];
+app.use(session({
+  secret: 'secretkey',
+  resave: false,
+  saveUninitialized: true
+}));
 
-let cart = [];
+// ================= DB CONNECTION =================
+mongoose.connect('mongodb://127.0.0.1:27017/ecommerceDB')
+.then(() => console.log("MongoDB Connected"))
+.catch(err => console.log(err));
 
-// Common CSS
-const style = `
-<style>
-  body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    background: #f5f6fa;
+// ================= MODELS =================
+const userSchema = new mongoose.Schema({
+  username: String,
+  password: String
+});
+
+const productSchema = new mongoose.Schema({
+  name: String,
+  price: Number
+});
+
+const User = mongoose.model('User', userSchema);
+const Product = mongoose.model('Product', productSchema);
+
+// ================= INIT PRODUCTS =================
+async function seedProducts() {
+  const count = await Product.countDocuments();
+  if (count === 0) {
+    await Product.insertMany([
+      { name: "Laptop", price: 50000 },
+      { name: "Phone", price: 20000 },
+      { name: "Headphones", price: 2000 }
+    ]);
+    console.log("Products Added");
   }
+}
+seedProducts();
 
-  header {
-    background: #2f3640;
-    color: white;
-    padding: 15px 30px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+// ================= AUTH =================
+
+// Register
+app.get('/register', (req, res) => {
+  res.send(`
+    <h2>Register</h2>
+    <form method="POST">
+      <input name="username" placeholder="Username" required/>
+      <input name="password" type="password" placeholder="Password" required/>
+      <button>Register</button>
+    </form>
+  `);
+});
+
+app.post('/register', async (req, res) => {
+  await User.create(req.body);
+  res.redirect('/login');
+});
+
+// Login
+app.get('/login', (req, res) => {
+  res.send(`
+    <h2>Login</h2>
+    <form method="POST">
+      <input name="username" required/>
+      <input name="password" type="password" required/>
+      <button>Login</button>
+    </form>
+  `);
+});
+
+app.post('/login', async (req, res) => {
+  const user = await User.findOne(req.body);
+  if (user) {
+    req.session.user = user;
+    req.session.cart = [];
+    res.redirect('/');
+  } else {
+    res.send("Invalid Login");
   }
+});
 
-  header h1 {
-    margin: 0;
-  }
+// Logout
+app.get('/logout', (req, res) => {
+  req.session.destroy();
+  res.redirect('/login');
+});
 
-  header a {
-    color: white;
-    text-decoration: none;
-    font-weight: bold;
-  }
+// ================= HOME =================
+app.get('/', async (req, res) => {
+  if (!req.session.user) return res.redirect('/login');
 
-  .container {
-    padding: 20px;
-  }
+  const products = await Product.find();
 
-  .grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-  }
-
-  .card {
-    background: white;
-    padding: 15px;
-    border-radius: 10px;
-    width: 250px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    transition: 0.3s;
-  }
-
-  .card:hover {
-    transform: translateY(-5px);
-  }
-
-  .card h3 {
-    margin-top: 0;
-  }
-
-  .price {
-    color: #27ae60;
-    font-weight: bold;
-  }
-
-  .btn {
-    display: inline-block;
-    padding: 10px 15px;
-    background: #0984e3;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    text-decoration: none;
-    cursor: pointer;
-    margin-top: 10px;
-  }
-
-  .btn:hover {
-    background: #74b9ff;
-  }
-
-  .cart-item {
-    background: white;
-    padding: 15px;
-    margin-bottom: 10px;
-    border-radius: 8px;
-  }
-
-  .total {
-    font-size: 20px;
-    font-weight: bold;
-    margin-top: 20px;
-  }
-</style>
-`;
-
-// Header
-const header = `
-<header>
-  <h1>🛒 My Store</h1>
-  <a href="/cart">Cart (${cart.length})</a>
-</header>
-`;
-
-// Home Page
-app.get('/', (req, res) => {
-  let productList = products.map(p => `
-    <div class="card">
+  let list = products.map(p => `
+    <div>
       <h3>${p.name}</h3>
-      <p class="price">₹${p.price}</p>
-      <a class="btn" href="/product/${p.id}">View Product</a>
+      <p>₹${p.price}</p>
+      <a href="/product/${p._id}">View</a>
     </div>
   `).join('');
 
   res.send(`
-    ${style}
-    ${header}
-    <div class="container">
-      <div class="grid">
-        ${productList}
-      </div>
-    </div>
+    <h1>Welcome ${req.session.user.username}</h1>
+    <a href="/cart">Cart (${req.session.cart.length})</a> |
+    <a href="/logout">Logout</a>
+    <hr/>
+    ${list}
   `);
 });
 
-// Product Page
-app.get('/product/:id', (req, res) => {
-  const product = products.find(p => p.id == req.params.id);
+// ================= PRODUCT =================
+app.get('/product/:id', async (req, res) => {
+  const product = await Product.findById(req.params.id);
 
   res.send(`
-    ${style}
-    ${header}
-    <div class="container">
-      <div class="card">
-        <h2>${product.name}</h2>
-        <p class="price">₹${product.price}</p>
+    <h2>${product.name}</h2>
+    <p>₹${product.price}</p>
 
-        <form method="POST" action="/add-to-cart">
-          <input type="hidden" name="id" value="${product.id}">
-          <button class="btn" type="submit">Add to Cart</button>
-        </form>
+    <form method="POST" action="/add-to-cart">
+      <input type="hidden" name="id" value="${product._id}">
+      <button>Add to Cart</button>
+    </form>
 
-        <br/><br/>
-        <a href="/">⬅ Back</a>
-      </div>
-    </div>
+    <a href="/">Back</a>
   `);
 });
 
-// Add to Cart
-app.post('/add-to-cart', (req, res) => {
-  const product = products.find(p => p.id == req.body.id);
-  cart.push(product);
+// ================= ADD TO CART =================
+app.post('/add-to-cart', async (req, res) => {
+  const product = await Product.findById(req.body.id);
+  req.session.cart.push(product);
   res.redirect('/cart');
 });
 
-// Cart Page
+// ================= CART =================
 app.get('/cart', (req, res) => {
-  let cartItems = cart.map(item => `
-    <div class="cart-item">
+  if (!req.session.user) return res.redirect('/login');
+
+  const cart = req.session.cart || [];
+
+  let items = cart.map(item => `
+    <div>
       <h3>${item.name}</h3>
-      <p class="price">₹${item.price}</p>
+      <p>₹${item.price}</p>
     </div>
   `).join('');
 
   let total = cart.reduce((sum, item) => sum + item.price, 0);
 
   res.send(`
-    ${style}
-    ${header}
-    <div class="container">
-      <h2>Your Cart</h2>
-
-      ${cartItems || "<p>Cart is empty</p>"}
-
-      <div class="total">Total: ₹${total}</div>
-
-      <br/>
-      <a class="btn" href="/">Continue Shopping</a>
-    </div>
+    <h2>Your Cart</h2>
+    ${items || "Cart Empty"}
+    <h3>Total: ₹${total}</h3>
+    <a href="/">Continue Shopping</a>
   `);
 });
 
-// Start server
+// ================= SERVER =================
 app.listen(3000, () => {
-  console.log("E-commerce app running on http://localhost:3000");
+  console.log("Server running on http://localhost:3000");
 });

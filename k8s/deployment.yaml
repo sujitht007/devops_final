@@ -15,6 +15,6 @@ spec:
       containers:
       - name: microservice
         image: sujitht007/microservice-app:latest
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent   # ✅ FIX
         ports:
         - containerPort: 3000
