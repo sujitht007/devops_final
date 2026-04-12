@@ -186,7 +186,7 @@ app.get('/cart', (req, res) => {
       <div class="total">Total: ₹${total}</div>
 
       <br/>
-      <a class="btn" href="/">Continue Shopping</a>
+      <a class="btn" href="/">Continue Shopping!</a>
     </div>
   `);
 });
