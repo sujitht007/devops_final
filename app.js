@@ -174,7 +174,7 @@ app.get('/product/:id', (req, res) => {
             </div>
         </div>
     `;
-    res.send(getLayout(content, `${p.name} | ShopEase`));
+    res.send(getLayout(content, `${p.name} | ShopEase `));
 });
 
 // 3. Cart Management Logic
