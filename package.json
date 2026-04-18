@@ -1,8 +1,18 @@
 {
-  "name": "microservice-app",
-  "version": "1.0.0",
-  "main": "app.js",
+  "name": "shopease-microservices",
+  "version": "2.0.0",
+  "main": "gateway.js",
+  "scripts": {
+    "gateway":  "node gateway.js",
+    "product":  "node product-service.js",
+    "cart":     "node cart-service.js",
+    "metrics":  "node metrics-service.js",
+    "dev":      "concurrently \"npm run gateway\" \"npm run product\" \"npm run cart\" \"npm run metrics\""
+  },
   "dependencies": {
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "prom-client": "^15.1.3",
+    "http-proxy-middleware": "^2.0.6",
+    "concurrently": "^8.2.2"
   }
 }

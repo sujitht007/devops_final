@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: product
+  template:
+    metadata:
+      labels:
+        app: product
+    spec:
+      containers:
+      - name: product
+        image: sujitht007/product-service:latest
+        imagePullPolicy: Never
+        env:
+        - name: CART_SERVICE_URL
+          value: http://cart-service:3002
+        - name: METRICS_SERVICE_URL
+          value: http://metrics-service:3003
+        ports:
+        - containerPort: 3001
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: product-service
+spec:
+  type: ClusterIP
+  selector:
+    app: product
+  ports:
+  - port: 3001
+    targetPort: 3001

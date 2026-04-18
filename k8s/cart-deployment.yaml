@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cart-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cart
+  template:
+    metadata:
+      labels:
+        app: cart
+    spec:
+      containers:
+      - name: cart
+        image: sujitht007/cart-service:latest
+        imagePullPolicy: Never
+        env:
+        - name: METRICS_SERVICE_URL
+          value: http://metrics-service:3003
+        ports:
+        - containerPort: 3002
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cart-service
+spec:
+  type: ClusterIP
+  selector:
+    app: cart
+  ports:
+  - port: 3002
+    targetPort: 3002

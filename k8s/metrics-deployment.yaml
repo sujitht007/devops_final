@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: metrics-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: metrics
+  template:
+    metadata:
+      labels:
+        app: metrics
+    spec:
+      containers:
+      - name: metrics
+        image: sujitht007/metrics-service:latest
+        imagePullPolicy: Never
+        env:
+        - name: PRODUCT_SERVICE_URL
+          value: http://product-service:3001
+        - name: CART_SERVICE_URL
+          value: http://cart-service:3002
+        - name: GATEWAY_SERVICE_URL
+          value: http://gateway-service:3000
+        ports:
+        - containerPort: 3003
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: metrics-service
+spec:
+  type: ClusterIP
+  selector:
+    app: metrics
+  ports:
+  - port: 3003
+    targetPort: 3003
