@@ -82,7 +82,7 @@ app.get('/cart', (req, res) => {
                 <input type="hidden" name="id" value="${item.id}">
                 <button class="btn" style="padding:5px 10px;background:none;color:var(--red);font-size:12px;font-weight:600;border:1px solid var(--paper3);" type="submit">✕ Remove</button>
               </form>
-              <a href="/" style="font-size:12px;color:var(--blue);font-weight:500;text-decoration:none;">Save for later</a>
+              <a href="/" style="font-size:13px;color:var(--blue);font-weight:500;text-decoration:none;">Save for later</a>
             </div>
           </div>
           <div style="text-align:right;">
